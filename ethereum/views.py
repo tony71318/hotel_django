@@ -90,27 +90,44 @@ def booking_contract(request,function):
 	# Post Method 新增一筆訂單
 	if function == 'post':
 
-		single_rooms = 3
+		total_room = {
+			'1': 3,
+			'2': 4
+		}
 
-		# order_id = request.POST['order_id']
+		size = myContract.call().order_id_table_size()		
+
 		name = request.POST['name']
-		room_id = int(request.POST['room_id'])
-		# number_of_people = int(request.POST['number_of_people'])
-		# price = int(request.POST['price'])
+		room_id = request.POST['room_id']
 		checkin_date = request.POST['checkin_date']
-		# time = request.POST['time']
 
-		order_id = str(room_id) + '_' + checkin_date;
+		room_type = room_id[0]
+		ordered_room_count = 0
 
-		if myContract.call().check(order_id) == True:
-			web3.personal.unlockAccount(web3.eth.coinbase, 'internintern')
+		
+		for i in range(0,size):
+			if 'id_table' in locals():
+				id_table.append(myContract.call().order_id_table(i))
+			else:
+				id_table = [myContract.call().order_id_table(i)]
 
-			transaction = myContract.transact({'from': web3.eth.coinbase}).new_order(order_id)
-			output = json.dumps({'result': transaction}, sort_keys=True, indent=4)
-			return HttpResponse(output, content_type="application/json")
-		else:
-			output = json.dumps({'result': 'order is not available'}, sort_keys=True, indent=4)
-			return HttpResponse(output, content_type="application/json")	
+		print(id_table)		
+
+		for i in id_table:
+			if i[0] == room_type:
+				ordered_room_count += 1		
+
+		# if ordered_room_count >= total_room[room_type]:
+		# 	output = json.dumps({'result': 'order is not available'}, sort_keys=True, indent=4)
+		# 	print('fail')
+		# 	return HttpResponse(output, content_type="application/json")
+		# else:
+		# 	web3.personal.unlockAccount(web3.eth.coinbase, 'internintern')
+		# 	print('success')
+		# 	order_id = room_type + '_' + checkin_date + '_' + name;	
+		# 	transaction = myContract.transact({'from': web3.eth.coinbase}).new_order(order_id)
+		# 	output = json.dumps({'result': transaction}, sort_keys=True, indent=4)
+		# 	return HttpResponse(output, content_type="application/json")		
 
 	# Post Method 刪除一筆訂單
 	if function == 'delete':
