@@ -5,11 +5,23 @@ from django.shortcuts import render_to_response
 import json
 import time
 
+from django.core import serializers
+
 from web3 import Web3, KeepAliveRPCProvider, IPCProvider
 web3 = Web3(KeepAliveRPCProvider(host='localhost', port='8545'))
 
 # database
 from owlting_hotel.models import Order,Room
+
+# terminal color
+color_front = '\x1b[7;30;42m'
+color_end = '\x1b[0m'
+def print_color(text):
+	print(color_front + text + color_end)
+
+
+
+
 
 def get(request,title):
 
@@ -60,100 +72,51 @@ def multiply_contract(request,function):
 def booking_contract(request,function):		
 
 	# 建立contract's instance 
-	abi = [ { "constant": 'false', "inputs": [ { "name": "order_id", "type": "bytes" } ], "name": "new_order", "outputs": [], "payable": 'false', "type": "function" }, { "constant": 'true', "inputs": [], "name": "owner_2", "outputs": [ { "name": "", "type": "address" } ], "payable": 'false', "type": "function" }, { "constant": 'false', "inputs": [], "name": "order_id_table_size", "outputs": [ { "name": "", "type": "uint256" } ], "payable": 'false', "type": "function" }, { "constant": 'false', "inputs": [ { "name": "order_id", "type": "bytes" } ], "name": "delete_order", "outputs": [], "payable": 'false', "type": "function" }, { "constant": 'true', "inputs": [], "name": "owner", "outputs": [ { "name": "", "type": "address" } ], "payable": 'false', "type": "function" }, { "constant": 'true', "inputs": [ { "name": "", "type": "uint256" } ], "name": "order_id_table", "outputs": [ { "name": "", "type": "bytes" } ], "payable": 'false', "type": "function" }, { "constant": 'false', "inputs": [ { "name": "order_id", "type": "bytes" } ], "name": "check", "outputs": [ { "name": "", "type": "bool" } ], "payable": 'false', "type": "function" }, { "constant": 'false', "inputs": [ { "name": "newOwner", "type": "address" } ], "name": "transferOwnership", "outputs": [], "payable": 'false', "type": "function" }, { "constant": 'false', "inputs": [ { "name": "newOwner", "type": "address" } ], "name": "addOwnership", "outputs": [], "payable": 'false', "type": "function" }, { "anonymous": 'false', "inputs": [ { "indexed": 'false', "name": "order_id", "type": "bytes" } ], "name": "new_order_event", "type": "event" }, { "anonymous": 'false', "inputs": [ { "indexed": 'false', "name": "order_id", "type": "bytes" } ], "name": "update_order_event", "type": "event" }, { "anonymous": 'false', "inputs": [ { "indexed": 'false', "name": "order_id", "type": "bytes" } ], "name": "delete_order_event", "type": "event" } ]
-	address = '0x20054728a550aC384C5C72Aa4CEF5B6942f8A4E7'
+	abi = [ { "constant": 'false', "inputs": [ { "name": "key", "type": "bytes" }, { "name": "order_id", "type": "bytes" }, { "name": "user_id", "type": "bytes" }, { "name": "room_type", "type": "uint256" }, { "name": "date", "type": "bytes" } ], "name": "new_order", "outputs": [], "payable": 'false', "type": "function" }, { "constant": 'true', "inputs": [ { "name": "", "type": "uint256" } ], "name": "rooms", "outputs": [ { "name": "id", "type": "uint256" }, { "name": "total_room", "type": "uint256" } ], "payable": 'false', "type": "function" }, { "constant": 'true', "inputs": [], "name": "owner_2", "outputs": [ { "name": "", "type": "address" } ], "payable": 'false', "type": "function" }, { "constant": 'false', "inputs": [ { "name": "old_key", "type": "bytes" }, { "name": "new_key", "type": "bytes" }, { "name": "order_id", "type": "bytes" }, { "name": "user_id", "type": "bytes" }, { "name": "room_type", "type": "uint256" }, { "name": "date", "type": "bytes" } ], "name": "update_order", "outputs": [], "payable": 'false', "type": "function" }, { "constant": 'false', "inputs": [ { "name": "room_type", "type": "uint256" } ], "name": "delete_room", "outputs": [], "payable": 'false', "type": "function" }, { "constant": 'false', "inputs": [ { "name": "room_type", "type": "uint256" }, { "name": "total_room", "type": "uint256" } ], "name": "add_room", "outputs": [], "payable": 'false', "type": "function" }, { "constant": 'false', "inputs": [ { "name": "key", "type": "bytes" } ], "name": "delete_order", "outputs": [], "payable": 'false', "type": "function" }, { "constant": 'true', "inputs": [], "name": "owner", "outputs": [ { "name": "", "type": "address" } ], "payable": 'false', "type": "function" }, { "constant": 'false', "inputs": [ { "name": "room_type", "type": "uint256" }, { "name": "total_room", "type": "uint256" } ], "name": "edit_room", "outputs": [], "payable": 'false', "type": "function" }, { "constant": 'false', "inputs": [ { "name": "room_type", "type": "uint256" }, { "name": "date", "type": "bytes" } ], "name": "check", "outputs": [ { "name": "", "type": "bool" } ], "payable": 'false', "type": "function" }, { "constant": 'false', "inputs": [ { "name": "key", "type": "bytes" } ], "name": "order_detail", "outputs": [ { "name": "", "type": "bytes" }, { "name": "", "type": "bytes" }, { "name": "", "type": "uint256" }, { "name": "", "type": "bytes" } ], "payable": 'false', "type": "function" }, { "constant": 'false', "inputs": [ { "name": "newOwner", "type": "address" } ], "name": "transferOwnership", "outputs": [], "payable": 'false', "type": "function" }, { "constant": 'false', "inputs": [ { "name": "newOwner", "type": "address" } ], "name": "addOwnership", "outputs": [], "payable": 'false', "type": "function" }, { "inputs": [], "payable": 'false', "type": "constructor" } ]
+	address = '0x3c33958659F3aE489BD2472D3967bdf4e14a7E27'
 
 	myContract = web3.eth.contract(abi=abi,address=address)			
-
-	# Ｇet Method 獲得全部的order_id
-	if function == 'order_id':
-
-		size = myContract.call().order_id_table_size()
-
-		for i in range(0,size):
-			if 'output' in locals():
-				output.append(myContract.call().order_id_table(i))
-			else:
-				output = [myContract.call().order_id_table(i)]
-
-		output = json.dumps(output, sort_keys=True, indent=4)
-
-		return HttpResponse(output, content_type="application/json")	
-
-	# Ｇet Method 檢查特定房間時段能否入住
-	if function == 'check':
-		order_id = request.GET['order_id']
-
-		output = myContract.call().check(order_id)
-
-		output_data = {'check': output}
-		output_json = json.dumps(output_data)
-
-		#room = Room.objects.create(name='雙人房',total_room=4)
-		room_data = Room.objects.all()
-		print(room)
-
-		return HttpResponse(output_json, content_type="application/json")	
 
 	# Post Method 新增一筆訂單
 	if function == 'post':
 
-		#order = Order.objects.create(name='Tony', room_type='單人房', room_id='103',start_date='2017-07-20',duration='1',paid=False)
-		room_data = Room.objects.all()
-		o1 = order_data[0]
-		print(o1.name)
-
-		total_room = {
-			'1': 3,
-			'2': 4
-		}
-
 		# post 的資料
-		user_id = request.POST['user_id']=
+		user_id = request.POST['user_id']
 		room_id = request.POST['room_id']
 		checkin_date = request.POST['checkin_date']
 
 		room_type = room_id[0]
-		ordered_room_count = 0
 
-		order_id = checkin_date + '_' + room_type + '_' + time.strftime("%I:%M:%S") + '_' + user_id;	
+		order_id = time.strftime("%y-%m-%d_%H:%M:%S") + '_' + user_id
+		key = order_id + checkin_date
+		print_color('key: ' + key)
 
-		# 檢查有無相同order_id
-		if myContract.call().check(order_id) == False:
+		# 檢查能不能預定
+		if myContract.call().check(int(room_type),checkin_date) == False:
 			output = json.dumps({'result': 'order is not available'}, sort_keys=True, indent=4)
 			return HttpResponse(output, content_type="application/json")
 		else:	
-			# 查詢所有的order_id
-			size = myContract.call().order_id_table_size()		
-			for i in range(0,size):
-				if 'id_table' in locals():
-					id_table.append(myContract.call().order_id_table(i))
-				else:
-					id_table = [myContract.call().order_id_table(i)]
-			if 'id_table' in locals():		
-				print(id_table)		
+			web3.personal.unlockAccount(web3.eth.coinbase, 'internintern')
 
-				# 計算該房型已被預訂幾間房
-				for i in id_table:
-					if myContract.call().check(i) == False:
-						order_checkin_date,order_room_type,order_order_id,order_id_user_id = i.split('_')
-						if order_room_type == room_type and order_checkin_date == checkin_date:
-							ordered_room_count += 1
-				print(ordered_room_count)	
+			# 訂單寫入區塊鏈
+			transaction = myContract.transact({'from': web3.eth.coinbase}).new_order(key,order_id,user_id,int(room_type),checkin_date)
+			print_color('transaction: ' + transaction)
 
-			if ordered_room_count >= total_room[room_type]:
-				output = json.dumps({'result': 'order is not available'}, sort_keys=True, indent=4)
-				return HttpResponse(output, content_type="application/json")
-			else:
-				web3.personal.unlockAccount(web3.eth.coinbase, 'internintern')
+			# 訂單寫入資料庫
+			order = Order.objects.create(order_id=order_id, name=user_id, room_type=room_type, room_id=room_id,start_date=checkin_date,duration='1',paid=False)
 
-				transaction = myContract.transact({'from': web3.eth.coinbase}).new_order(order_id)
-				output = json.dumps({'result': transaction}, sort_keys=True, indent=4)
-				return HttpResponse(output, content_type="application/json")		
+			output = json.dumps({'result': transaction}, sort_keys=True, indent=4)
+			return HttpResponse(output, content_type="application/json")		
 
 	# Post Method 刪除一筆訂單
 	if function == 'delete':
 		order_id = request.POST['order_id']
+		room_id = request.POST['room_id']
+		checkin_date = request.POST['checkin_date']
+
+		room_type = room_id[0]
+
+		key = order_id + checkin_date
 
 		if myContract.call().check(order_id) == False:
 			web3.personal.unlockAccount(web3.eth.coinbase, 'internintern')
@@ -164,5 +127,10 @@ def booking_contract(request,function):
 		else:
 			output = json.dumps({'result': 'order is not exist'}, sort_keys=True, indent=4)
 			return HttpResponse(output, content_type="application/json")
+
+	if function == 'list_all':
+
+		order_data_json = serializers.serialize('json', Order.objects.all())
+		return HttpResponse(order_data_json, content_type="application/json")	
 
 
