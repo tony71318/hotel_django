@@ -8,6 +8,9 @@ import time
 from web3 import Web3, KeepAliveRPCProvider, IPCProvider
 web3 = Web3(KeepAliveRPCProvider(host='localhost', port='8545'))
 
+# database
+from owlting_hotel.models import Order,Room
+
 def get(request,title):
 
 	if title == 'peers':	
@@ -86,10 +89,19 @@ def booking_contract(request,function):
 		output_data = {'check': output}
 		output_json = json.dumps(output_data)
 
+		#room = Room.objects.create(name='雙人房',total_room=4)
+		room_data = Room.objects.all()
+		print(room)
+
 		return HttpResponse(output_json, content_type="application/json")	
 
 	# Post Method 新增一筆訂單
 	if function == 'post':
+
+		#order = Order.objects.create(name='Tony', room_type='單人房', room_id='103',start_date='2017-07-20',duration='1',paid=False)
+		room_data = Room.objects.all()
+		o1 = order_data[0]
+		print(o1.name)
 
 		total_room = {
 			'1': 3,
@@ -97,14 +109,14 @@ def booking_contract(request,function):
 		}
 
 		# post 的資料
-		user_id = request.POST['user_id']
+		user_id = request.POST['user_id']=
 		room_id = request.POST['room_id']
 		checkin_date = request.POST['checkin_date']
 
 		room_type = room_id[0]
 		ordered_room_count = 0
 
-		order_id = checkin_date + '_' + room_type + '_' + time.strftime("%I:%M:%S") + user_id;	
+		order_id = checkin_date + '_' + room_type + '_' + time.strftime("%I:%M:%S") + '_' + user_id;	
 
 		# 檢查有無相同order_id
 		if myContract.call().check(order_id) == False:
@@ -124,7 +136,7 @@ def booking_contract(request,function):
 				# 計算該房型已被預訂幾間房
 				for i in id_table:
 					if myContract.call().check(i) == False:
-						order_checkin_date,order_room_type,order_order_id = i.split('_')
+						order_checkin_date,order_room_type,order_order_id,order_id_user_id = i.split('_')
 						if order_room_type == room_type and order_checkin_date == checkin_date:
 							ordered_room_count += 1
 				print(ordered_room_count)	
