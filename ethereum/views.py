@@ -106,22 +106,65 @@ def booking_contract(request,function):
 			order = Order.objects.create(order_id=order_id, name=user_id, room_type=room_type, room_id=room_id,start_date=checkin_date,duration='1',paid=False)
 
 			output = json.dumps({'result': transaction}, sort_keys=True, indent=4)
-			return HttpResponse(output, content_type="application/json")		
+			return HttpResponse(output, content_type="application/json")
 
-	# Post Method 刪除一筆訂單
-	if function == 'delete':
+	# Post Method 新增一筆訂單
+	if function == 'update':
+
+		# post 的資料
+		old_key = request.POST['old_key']
 		order_id = request.POST['order_id']
+		user_id = request.POST['user_id']
 		room_id = request.POST['room_id']
 		checkin_date = request.POST['checkin_date']
 
 		room_type = room_id[0]
 
-		key = order_id + checkin_date
+		new_key = order_id + checkin_date
+		print_color('new_key: ' + new_key)
 
-		if myContract.call().check(order_id) == False:
+		# 檢查能不能預定
+		if myContract.call().check(int(room_type),checkin_date) == False:
+			output = json.dumps({'result': 'order is not available'}, sort_keys=True, indent=4)
+			return HttpResponse(output, content_type="application/json")
+		else:	
 			web3.personal.unlockAccount(web3.eth.coinbase, 'internintern')
 
-			transaction = myContract.transact({'from': web3.eth.coinbase}).delete_order(order_id)
+			# 訂單寫入區塊鏈
+			transaction = myContract.transact({'from': web3.eth.coinbase}).update_order(old_key,new_key,order_id,user_id,int(room_type),checkin_date)
+			print_color('transaction: ' + transaction)
+
+			# 訂單寫入資料庫
+			order = Order.objects.get(order_id=order_id)
+			order.room_id = room_id
+			print_color('room_id: ' + room_id)
+			order.room_type = room_type
+			print_color('room_type: ' + room_type)
+			order.start_date = checkin_date
+			print_color('checkin_date: ' + checkin_date)
+			order.save()
+			print_color('save update to database')
+
+			output = json.dumps({'result': transaction}, sort_keys=True, indent=4)
+			return HttpResponse(output, content_type="application/json")				
+
+	# Post Method 刪除一筆訂單
+	if function == 'delete':
+		order_id = request.POST['order_id']
+		checkin_date = request.POST['checkin_date']
+
+		key = order_id + checkin_date
+
+		# 如果資料庫有這筆資料
+		if Order.objects.filter(order_id=order_id).exists():
+			web3.personal.unlockAccount(web3.eth.coinbase, 'internintern')
+
+			transaction = myContract.transact({'from': web3.eth.coinbase}).delete_order(key)
+			print_color('transaction: ' + transaction)
+
+			Order.objects.filter(order_id=order_id).delete()	
+			print_color('delete record which order_id is: ' + order_id)
+
 			output = json.dumps({'result': transaction}, sort_keys=True, indent=4)
 			return HttpResponse(output, content_type="application/json")
 		else:
@@ -129,8 +172,112 @@ def booking_contract(request,function):
 			return HttpResponse(output, content_type="application/json")
 
 	if function == 'list_all':
-
 		order_data_json = serializers.serialize('json', Order.objects.all())
-		return HttpResponse(order_data_json, content_type="application/json")	
+		print_color('return all objects of Order')
+		return HttpResponse(order_data_json, content_type="application/json")
+
+	if function == 'list_all_room':
+		order_data_json = serializers.serialize('json', Room.objects.all())
+		print_color('return all objects of Room')
+		return HttpResponse(order_data_json, content_type="application/json")
+
+	if function == 'post_room':
+
+		# post 的資料
+		user_id = request.POST['user_id']
+		room_id = request.POST['room_id']
+		checkin_date = request.POST['checkin_date']
+
+		room_type = room_id[0]
+
+		order_id = time.strftime("%y-%m-%d_%H:%M:%S") + '_' + user_id
+		key = order_id + checkin_date
+		print_color('key: ' + key)
+
+		# 檢查能不能預定
+		if myContract.call().check(int(room_type),checkin_date) == False:
+			output = json.dumps({'result': 'order is not available'}, sort_keys=True, indent=4)
+			return HttpResponse(output, content_type="application/json")
+		else:	
+			web3.personal.unlockAccount(web3.eth.coinbase, 'internintern')
+
+			# 訂單寫入區塊鏈
+			transaction = myContract.transact({'from': web3.eth.coinbase}).new_order(key,order_id,user_id,int(room_type),checkin_date)
+			print_color('transaction: ' + transaction)
+
+			# 訂單寫入資料庫
+			order = Order.objects.create(order_id=order_id, name=user_id, room_type=room_type, room_id=room_id,start_date=checkin_date,duration='1',paid=False)
+
+			output = json.dumps({'result': transaction}, sort_keys=True, indent=4)
+			return HttpResponse(output, content_type="application/json")
+
+	# Post Method 新增一筆訂單
+	if function == 'update_room':
+
+		# post 的資料
+		old_key = request.POST['old_key']
+		order_id = request.POST['order_id']
+		user_id = request.POST['user_id']
+		room_id = request.POST['room_id']
+		checkin_date = request.POST['checkin_date']
+
+		room_type = room_id[0]
+
+		new_key = order_id + checkin_date
+		print_color('new_key: ' + new_key)
+
+		# 檢查能不能預定
+		if myContract.call().check(int(room_type),checkin_date) == False:
+			output = json.dumps({'result': 'order is not available'}, sort_keys=True, indent=4)
+			return HttpResponse(output, content_type="application/json")
+		else:	
+			web3.personal.unlockAccount(web3.eth.coinbase, 'internintern')
+
+			# 訂單寫入區塊鏈
+			transaction = myContract.transact({'from': web3.eth.coinbase}).update_order(old_key,new_key,order_id,user_id,int(room_type),checkin_date)
+			print_color('transaction: ' + transaction)
+
+			# 訂單寫入資料庫
+			order = Order.objects.get(order_id=order_id)
+			order.room_id = room_id
+			print_color('room_id: ' + room_id)
+			order.room_type = room_type
+			print_color('room_type: ' + room_type)
+			order.start_date = checkin_date
+			print_color('checkin_date: ' + checkin_date)
+			order.save()
+			print_color('save update to database')
+
+			output = json.dumps({'result': transaction}, sort_keys=True, indent=4)
+			return HttpResponse(output, content_type="application/json")				
+
+		# Post Method 刪除一個房型
+	if function == 'delete_room':
+		order_id = request.POST['order_id']
+		checkin_date = request.POST['checkin_date']
+
+		key = order_id + checkin_date
+
+		# 如果資料庫有這筆資料
+		if Order.objects.filter(order_id=order_id).exists():
+			web3.personal.unlockAccount(web3.eth.coinbase, 'internintern')
+
+			transaction = myContract.transact({'from': web3.eth.coinbase}).delete_order(key)
+			print_color('transaction: ' + transaction)
+
+			Order.objects.filter(order_id=order_id).delete()	
+			print_color('delete record which order_id is: ' + order_id)
+
+			output = json.dumps({'result': transaction}, sort_keys=True, indent=4)
+			return HttpResponse(output, content_type="application/json")
+		else:
+			output = json.dumps({'result': 'order is not exist'}, sort_keys=True, indent=4)
+			return HttpResponse(output, content_type="application/json")
+		
+	
+
+
+
+
 
 
